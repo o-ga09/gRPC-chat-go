@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -30,20 +30,51 @@ func main() {
 	}
 
 	// Go channel which receives messages.
+	subChan := make(chan string)
 	go func(){
 		for {
 			ch := pubsub.Channel()
 			// Consume messages.
 			for msg := range ch {
-				fmt.Println(msg.Channel, msg.Payload)
+				subChan <- msg.Payload
 			}
 		}
 	}()
 
-	quit := make(chan os.Signal,1)
-	signal.Notify(quit,os.Interrupt)
-	<- quit
-	log.Printf("chat stopping ...")
+	// Go channel which publish messages.
+	pubChan := make(chan string)
+	go func() {
+		b := bufio.NewReader(os.Stdin)
+		for {
+			fmt.Printf(">")
+			line, _, err := b.ReadLine()
+			if err != nil {
+				log.Println(err)
+				pubChan <- "/exit"
+				return
+			}
+			pubChan <- string(line)
+		}
+	} ()
+
+	chatting := true
+	for chatting {
+		select {
+		case msg := <- subChan:
+			fmt.Println(msg)
+			fmt.Printf(">")
+		case input := <- pubChan:
+			if input == "/exit" {
+				chatting = false
+			} else {
+				redisdb.Publish("testchannel",input)
+			}
+		default:
+			time.Sleep(1* time.Millisecond)
+		}
+	}
+
+	redisdb.Publish("testchannel","user has left")
 
 	time.AfterFunc(time.Second, func() {
 		// When pubsub is closed channel is closed too.
