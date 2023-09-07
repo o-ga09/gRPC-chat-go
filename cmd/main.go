@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -10,7 +11,14 @@ import (
 	"github.com/go-redis/redis"
 )
 
+type message struct {
+	Body string
+	SendUser string
+	SendAt time.Time
+}
+
 func main() {
+	defer func(){recover()}()
 	// server.Run()
 	redisdb := redis.NewClient(&redis.Options{
 		Addr:         ":6379",
@@ -23,20 +31,22 @@ func main() {
 
 	pubsub := redisdb.Subscribe("testchannel")
 
-	// Wait for confirmation that subscription is created before publishing anything.
-	_, err := pubsub.Receive()
+	buf := bufio.NewReader(os.Stdin)
+	fmt.Printf("Input Your Name > ")
+	username, _, err := buf.ReadLine()
 	if err != nil {
-		panic(err)
+		panic("User name Invalid")
 	}
 
 	// Go channel which receives messages.
-	subChan := make(chan string)
+	subChan := make(chan *message)
 	go func(){
 		for {
-			ch := pubsub.Channel()
-			// Consume messages.
-			for msg := range ch {
-				subChan <- msg.Payload
+			msg, err := pubsub.ReceiveMessage()
+			m := new(message)
+			json.Unmarshal([]byte(msg.Payload),&m)
+			if err == nil {
+				subChan <- m
 			}
 		}
 	}()
@@ -61,13 +71,22 @@ func main() {
 	for chatting {
 		select {
 		case msg := <- subChan:
-			fmt.Println(msg)
+			if msg.SendUser == string(username) {
+				continue
+			}
+			fmt.Printf("%s > %s\n",msg.SendUser,msg.Body)
 			fmt.Printf(">")
 		case input := <- pubChan:
 			if input == "/exit" {
 				chatting = false
 			} else {
-				redisdb.Publish("testchannel",input)
+				m := message{
+					Body: input,
+					SendUser: string(username),
+					SendAt: time.Now(),
+				}
+				j, _ := json.Marshal(m)
+				redisdb.Publish("testchannel",j)
 			}
 		default:
 			time.Sleep(1* time.Millisecond)
