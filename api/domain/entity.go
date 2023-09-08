@@ -19,3 +19,13 @@ type SendUser struct {
 type SendAt struct {
 	Value time.Time
 }
+
+type MessageStatus struct {
+	Value string
+	Code int
+}
+
+const (
+	SUCCESS = 0
+	ERR = 1
+)
