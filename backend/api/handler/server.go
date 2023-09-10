@@ -34,15 +34,19 @@ func Run() {
 	chatpb.RegisterMessagingServiseServer(grpc_server,gp.NewChatServer())
 	reflection.Register(grpc_server)
 
-	room := domain.Room{}
-	websocket_handler := ws.NewWebSocketHandler(&room)
+	room := domain.NewRoom()
+	websocket_handler := ws.NewWebSocketHandler(room)
 	websocket_server := http.Server{
 		Handler: websocket.Handler(websocket_handler.Handler),
 	}
-	http.HandleFunc("/ws",websocket_server.Handler.ServeHTTP)
+	// WebSocketハンドラを設定
+	// http.Handle("/ws",websocket_server.Handler)
+	http.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
+		websocket_handler.Handler(ws)
+	}))
 
 	go func() {
-		log.Printf("websocket server started on :%d",grpc_port)
+		log.Printf("websocket server started on :%d",websocket_port)
 		websocket_server.Serve(websocket_listener)
 	} ()
 

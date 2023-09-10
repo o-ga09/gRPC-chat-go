@@ -3,7 +3,6 @@ package wensocket
 import (
 	"gRPC-chat/api/domain"
 	"log"
-	"net/http"
 
 	"golang.org/x/net/websocket"
 )
@@ -19,15 +18,21 @@ func NewWebSocketHandler(room *domain.Room) *WebsocketHandler {
 }
 
 func (h *WebsocketHandler) Handler(ws *websocket.Conn) {
-	defer ws.Close()
+	defer func () {
+		log.Printf("[INFO] websocket connection closed")
+		ws.Close()
+	}()
 
-	log.Printf("[INFO] user enter")
 	client := domain.NewClient(ws)
-	go client.Read(h.room.BroardcastCh,h.room.RegisterCh)
-	go client.Write()
-	h.room.RegisterCh <- client
-}
+	h.room.Register(client)
 
-func (h *WebsocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+	var msg string
+	for {
+		err := websocket.Message.Receive(ws, &msg)
+		log.Printf("[INFO] receive message :  %v",msg)
+		if err != nil {
+			break
+		}
+		h.room.Message <- msg
+	}
 }

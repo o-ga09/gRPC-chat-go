@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"log"
 	"time"
 
 	"golang.org/x/net/websocket"
@@ -12,6 +11,7 @@ type Room struct {
 	RegisterCh chan *Client
 	UnRegisterCh chan *Client
 	BroardcastCh chan []byte
+	Message chan string
 }
 
 type Message struct {
@@ -53,6 +53,7 @@ func NewRoom() *Room {
 		RegisterCh: make(chan *Client),
 		UnRegisterCh: make(chan *Client),
 		BroardcastCh: make(chan []byte),
+		Message: make(chan string),
 	}
 }
 
@@ -65,14 +66,8 @@ func NewClient(ws *websocket.Conn) *Client {
 
 func (r *Room) Run() {
 	for {
-		select {
-		case client := <- r.RegisterCh:
-			r.Register(client)
-		case client := <- r.UnRegisterCh:
-			r.UnRegister(client)
-		case msg := <- r.BroardcastCh:
-			r.Broardcast(msg)
-		}
+		message := <-r.Message
+		r.Broardcast(message)
 	}
 }
 
@@ -84,51 +79,8 @@ func (r *Room) UnRegister(client *Client) {
 	delete(r.Clients,client)
 }
 
-func (r * Room) Broardcast(msg []byte) {
+func (r * Room) Broardcast(msg string) {
 	for c := range r.Clients {
-		c.sendCh <- msg
+		websocket.Message.Send(c.ws,msg)
 	}
-}
-
-func (c *Client) Read(broardcastcha <- chan []byte, unregister <- chan *Client) {
-	defer c.ws.Close()
-
-	for {
-		var msg []byte
-		_, err := c.ws.Read(msg)
-		if err != nil {
-			// slogに変更
-			log.Printf("[ERR] can not read message: %v",err)
-			if !c.ws.IsClientConn() {
-				log.Printf("[INFO] unexpected server connection close")
-			}
-			break
-		}
-
-		c.sendCh <- msg
-	}
-}
-
-func (c *Client) Write() {
-	defer c.ws.Close()
-
-	for {
-		msg := <- c.sendCh
-
-		_, err := c.ws.Write(msg)
-		if err != nil {
-			// slogに変更
-			log.Printf("[ERR] can not write message: %v",err)
-			return
-		}
-
-		if err := c.ws.Close(); err != nil {
-			return
-		}
-	}
-}
-
-func (c *Client) disconnect(unregister chan<- *Client) {
-	unregister <- c
-	c.ws.Close()
 }
