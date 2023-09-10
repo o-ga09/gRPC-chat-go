@@ -1,12 +1,12 @@
-package handler
+package grpc
 
 import (
 	"context"
 	chatpb "gRPC-chat/pkg/grpc"
 
 	"google.golang.org/protobuf/types/known/emptypb"
-) 
-	
+)
+
 type ChatService struct {
 	chatpb.UnimplementedMessagingServiseServer
 }

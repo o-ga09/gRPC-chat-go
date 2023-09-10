@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/go-playground/assert/v2 v2.2.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/golang/protobuf v1.5.3 // indirect
 	golang.org/x/net v0.9.0 // indirect
