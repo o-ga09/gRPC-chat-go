@@ -1,3 +1,5 @@
 export type Message = {
-    content: string;
+    msgBody: string;
+    sender: string;
+    sendAt: string;
   };
