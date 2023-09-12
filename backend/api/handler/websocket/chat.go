@@ -25,9 +25,10 @@ func (h *WebsocketHandler) Handler(ctx context.Context, ws *websocket.Conn) {
 		ws.Close()
 	}()
 
-
+	ctx = context.WithValue(ctx,"wsConn",ws)
 	client := h.Usecase.NewClient(ctx)
 	h.Usecase.Register(client)
+	log.Println("[INFO] user registerd")
 
 	var msg domain.Message
 	for {
