@@ -1,16 +1,17 @@
 package handler
 
 import (
+	"context"
 	"fmt"
-	"gRPC-chat/api/domain"
+	di "gRPC-chat/api/DI"
 	gp "gRPC-chat/api/handler/grpc"
-	ws "gRPC-chat/api/handler/websocket"
 	chatpb "gRPC-chat/pkg/grpc"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"golang.org/x/net/websocket"
 	"google.golang.org/grpc"
@@ -34,15 +35,14 @@ func Run() {
 	chatpb.RegisterMessagingServiseServer(grpc_server,gp.NewChatServer())
 	reflection.Register(grpc_server)
 
-	room := domain.NewRoom()
-	websocket_handler := ws.NewWebSocketHandler(room)
-	websocket_server := http.Server{
-		Handler: websocket.Handler(websocket_handler.Handler),
-	}
+	websocket_handler := di.DiContainer()
+	websocket_server := http.Server{}
 	// WebSocketハンドラを設定
 	// http.Handle("/ws",websocket_server.Handler)
 	http.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
-		websocket_handler.Handler(ws)
+		ctx := context.Background()
+		ctx = context.WithValue(ctx,"sendAt",time.Now())
+		websocket_handler.Handler(ctx,ws)
 	}))
 
 	go func() {
@@ -57,7 +57,7 @@ func Run() {
 
 	go func() {
 		log.Printf("Chat Room goroutine start ...")
-		room.Run()
+		websocket_handler.Usecase.Receivemessage()
 	} ()
 
 	quit := make(chan os.Signal,1)

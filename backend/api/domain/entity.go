@@ -11,7 +11,7 @@ type Room struct {
 	RegisterCh chan *Client
 	UnRegisterCh chan *Client
 	BroardcastCh chan []byte
-	Message chan string
+	Message chan Message
 }
 
 type Message struct {
@@ -38,8 +38,8 @@ type MessageStatus struct {
 }
 
 type Client struct {
-	ws *websocket.Conn
-	sendCh chan []byte
+	Ws *websocket.Conn
+	SendCh chan []byte
 }
 
 const (
@@ -53,34 +53,17 @@ func NewRoom() *Room {
 		RegisterCh: make(chan *Client),
 		UnRegisterCh: make(chan *Client),
 		BroardcastCh: make(chan []byte),
-		Message: make(chan string),
+		Message: make(chan Message),
 	}
 }
 
 func NewClient(ws *websocket.Conn) *Client {
 	return &Client{
-		ws: ws,
-		sendCh: make(chan []byte),
+		Ws: ws,
+		SendCh: make(chan []byte),
 	}
 }
 
-func (r *Room) Run() {
-	for {
-		message := <-r.Message
-		r.Broardcast(message)
-	}
-}
-
-func (r *Room) Register(client *Client) {
-	r.Clients[client] = true
-}
-
-func (r *Room) UnRegister(client *Client) {
-	delete(r.Clients,client)
-}
-
-func (r * Room) Broardcast(msg string) {
-	for c := range r.Clients {
-		websocket.Message.Send(c.ws,msg)
-	}
+func (t *SendAt) ToString() string {
+	return t.Value.String()
 }

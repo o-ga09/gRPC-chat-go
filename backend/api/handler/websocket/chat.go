@@ -1,38 +1,39 @@
-package wensocket
+package websocket
 
 import (
+	"context"
 	"gRPC-chat/api/domain"
+	"gRPC-chat/api/usecase"
 	"log"
 
 	"golang.org/x/net/websocket"
 )
 
 type WebsocketHandler struct {
-	room *domain.Room
+	Usecase *usecase.UsecaseProvider
 }
 
-func NewWebSocketHandler(room *domain.Room) *WebsocketHandler {
+func NewWebSocketHandler(usecase *usecase.UsecaseProvider) *WebsocketHandler {
 	return &WebsocketHandler{
-		room: room,
+		Usecase: usecase,
 	}
 }
 
-func (h *WebsocketHandler) Handler(ws *websocket.Conn) {
+func (h *WebsocketHandler) Handler(ctx context.Context, ws *websocket.Conn) {
 	defer func () {
 		log.Printf("[INFO] websocket connection closed")
 		ws.Close()
 	}()
 
-	client := domain.NewClient(ws)
-	h.room.Register(client)
 
-	var msg string
+	client := h.Usecase.NewClient(ctx)
+	h.Usecase.Register(client)
+
+	var msg domain.Message
 	for {
-		err := websocket.Message.Receive(ws, &msg)
+		h.Usecase.Receivemessage()
 		log.Printf("[INFO] receive message :  %v",msg)
-		if err != nil {
-			break
-		}
-		h.room.Message <- msg
+
+		h.Usecase.Room.Message <- msg
 	}
 }
