@@ -12,7 +12,7 @@ export const useSendMessage = () => {
     const message: Message = { 
       msgBody: input,
       sender: "user1",
-      sendAt: "2023-09-11 23:59:59"
+      sendAt: ToDate()
     };
     socket.send(JSON.stringify(message));
     setInput("");
@@ -20,3 +20,18 @@ export const useSendMessage = () => {
 
   return { input, setInput, send };
 };
+
+function ToDate() :string {
+  const date = new Date();
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  const customFormat = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+  return customFormat;
+}

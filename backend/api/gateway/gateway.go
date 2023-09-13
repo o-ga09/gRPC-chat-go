@@ -5,6 +5,7 @@ import (
 	"gRPC-chat/api/domain"
 	"gRPC-chat/api/driver"
 	"gRPC-chat/util"
+	"log"
 )
 
 type ChatGateway struct {
@@ -32,12 +33,16 @@ func (g *ChatGateway) Broardcast(client *domain.Client, msg *domain.Message) {
 	g.driver.Broardcast(client.Ws,&m)
 }
 
-func (g ChatGateway) ReceiveMessage(client domain.Client) *domain.Message {
-	msg := g.driver.ReceiveMessage(client.Ws)
-	
+func (g ChatGateway) ReceiveMessage(client domain.Client) (*domain.Message, error) {
+	msg, err := g.driver.ReceiveMessage(client.Ws)
+	log.Println("[DEBUG]",util.Totimestamp(msg.SendAt))
+
+	if err != nil {
+		return nil, err
+	}
 	return &domain.Message{
 		Body: domain.MessageBody{Value: msg.Body},
 		SendUser: domain.SendUser{Value: msg.SendUser},
 		SendAt: domain.SendAt{Value: util.Totimestamp(msg.SendAt)},
-	}
+	}, nil
 } 

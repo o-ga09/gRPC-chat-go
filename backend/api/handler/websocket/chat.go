@@ -2,7 +2,6 @@ package websocket
 
 import (
 	"context"
-	"gRPC-chat/api/domain"
 	"gRPC-chat/api/usecase"
 	"log"
 
@@ -30,11 +29,6 @@ func (h *WebsocketHandler) Handler(ctx context.Context, ws *websocket.Conn) {
 	h.Usecase.Register(client)
 	log.Println("[INFO] user registerd")
 
-	var msg domain.Message
-	for {
-		h.Usecase.Receivemessage()
-		log.Printf("[INFO] receive message :  %v",msg)
-
-		h.Usecase.Room.Message <- msg
-	}
+	err := h.Usecase.ReceiveAndSend(client)
+	log.Printf("[INFO] err : %v", err)
 }

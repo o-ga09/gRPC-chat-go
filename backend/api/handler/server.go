@@ -36,14 +36,16 @@ func Run() {
 	reflection.Register(grpc_server)
 
 	websocket_handler := di.DiContainer()
-	websocket_server := http.Server{}
+	websocket_server := http.Server{
+		Handler: websocket.Handler(func(ws *websocket.Conn) {
+			ctx := context.Background()
+			ctx = context.WithValue(ctx,"sendAt",time.Now())
+			websocket_handler.Handler(ctx,ws)
+		}),
+	}
 	// WebSocketハンドラを設定
 	// http.Handle("/ws",websocket_server.Handler)
-	http.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
-		ctx := context.Background()
-		ctx = context.WithValue(ctx,"sendAt",time.Now())
-		websocket_handler.Handler(ctx,ws)
-	}))
+	http.Handle("/ws",websocket_server.Handler)
 
 	go func() {
 		log.Printf("websocket server started on :%d",websocket_port)
@@ -57,7 +59,7 @@ func Run() {
 
 	go func() {
 		log.Printf("Chat Room goroutine start ...")
-		websocket_handler.Usecase.Receivemessage()
+		websocket_handler.Usecase.ReceiveMessage()
 	} ()
 
 	quit := make(chan os.Signal,1)

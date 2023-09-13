@@ -1,8 +1,12 @@
 package util
 
-import "time"
+import (
+	"time"
+)
 
 func Totimestamp(timestamp string) time.Time {
-    t, _ := time.Parse("2006-01-02T15:04:05Z",timestamp)
+	const layout = "2006-01-02 15:04:05"
+    t, _ := time.Parse(layout,timestamp)
+
 	return t
 }

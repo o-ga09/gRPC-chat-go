@@ -2,7 +2,9 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"gRPC-chat/api/domain"
+	"io"
 	"log"
 
 	"golang.org/x/net/websocket"
@@ -13,7 +15,7 @@ type InputPort interface {
 	Publish(context.Context, *domain.Message) *domain.MessageStatus
 	Subscribe(context.Context, *domain.Message) *domain.MessageStatus
 	Broardcast(client *domain.Client,msg *domain.Message)
-	ReceiveMessage(domain.Client) *domain.Message
+	ReceiveMessage(domain.Client) (*domain.Message, error)
 }
 
 type UsecaseProvider struct {
@@ -28,10 +30,29 @@ func NewUsecase(port InputPort) *UsecaseProvider {
 	}
 }
 
-func (u *UsecaseProvider) Receivemessage() {
+func (u *UsecaseProvider) ReceiveAndSend(client *domain.Client) error {
+	defer func() {
+		recover()
+	}()
+	for {
+		msg, err := u.port.ReceiveMessage(*client)
+		if err != nil {
+			if errors.Is(err,io.EOF) {
+				continue
+			}
+			return err
+		}
+
+		log.Printf("[INFO] receive message :  %v",msg)
+
+		u.Room.Message <- msg
+	}
+}
+
+func (u *UsecaseProvider) ReceiveMessage() {
 	for {
 		message := <-u.Room.Message
-		u.SendMessage(&message)
+		u.SendMessage(message)
 	}
 }
 

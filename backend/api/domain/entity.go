@@ -11,7 +11,7 @@ type Room struct {
 	RegisterCh chan *Client
 	UnRegisterCh chan *Client
 	BroardcastCh chan []byte
-	Message chan Message
+	Message chan *Message
 }
 
 type Message struct {
@@ -53,7 +53,7 @@ func NewRoom() *Room {
 		RegisterCh: make(chan *Client),
 		UnRegisterCh: make(chan *Client),
 		BroardcastCh: make(chan []byte),
-		Message: make(chan Message),
+		Message: make(chan *Message),
 	}
 }
 
