@@ -15,6 +15,7 @@ type Message struct {
 	Body     string `json:"msgBody,omitempty"`
 	SendUser string `json:"sender,omitempty"`
 	SendAt   string `json:"sendAt,omitempty"`
+	Channel  string `json:"channel,omitempty"`
 }
 
 type WebSocketDriverImpl struct {}

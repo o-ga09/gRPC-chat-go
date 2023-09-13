@@ -10,14 +10,25 @@ import (
 
 type ChatGateway struct {
 	driver driver.WebSocketDriver
+	redisDriver driver.PubSub
 }
 
-func NewChatGateway(driver driver.WebSocketDriver) *ChatGateway {
-	return &ChatGateway{driver: driver}
+func NewChatGateway(driver driver.WebSocketDriver, redisdriver driver.PubSub) *ChatGateway {
+	return &ChatGateway{driver: driver, redisDriver: redisdriver}
 }
 
 func (g *ChatGateway) Publish(ctx context.Context, msg *domain.Message) *domain.MessageStatus {
-	return &domain.MessageStatus{}
+	driverMessage := driver.Message{
+		Body: msg.Body.Value,
+		SendUser: msg.SendUser.Value,
+		SendAt: msg.SendAt.ToString(),
+		Channel: msg.Channel.Value,
+	}
+	status := g.redisDriver.Publish(&driverMessage)
+	return &domain.MessageStatus{
+		Value: status.Code.String(),
+		Code: int(status.Code.Val()),
+	}
 }
 
 func (g *ChatGateway) Subscribe(ctx context.Context, msg *domain.Message) *domain.MessageStatus {

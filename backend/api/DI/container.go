@@ -8,8 +8,10 @@ import (
 )
 
 func DiContainer() *websocket.WebsocketHandler {
+	redisConn := driver.NewRedis()
+	redisDriver := driver.NewPubSubImpl(redisConn)
 	driver := driver.NewWebSocketDriver()
-	gateway := gateway.NewChatGateway(driver)
+	gateway := gateway.NewChatGateway(driver,redisDriver)
 	usecase := usecase.NewUsecase(gateway)
 	handler := websocket.NewWebSocketHandler(usecase)
 

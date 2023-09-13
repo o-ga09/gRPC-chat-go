@@ -18,6 +18,7 @@ type Message struct {
 	Body MessageBody
 	SendUser SendUser
 	SendAt SendAt
+	Channel Channel
 }
 
 type MessageBody struct {
@@ -30,6 +31,10 @@ type SendUser struct {
 
 type SendAt struct {
 	Value time.Time
+}
+
+type Channel struct {
+	Value string
 }
 
 type MessageStatus struct {
